@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs"
 import { v2 as cloudinary } from "cloudinary"
 
 export const getUserProfile = async (req, res) => {
-    const username = req.params;
+    const { username } = req.params;
 
     try {
         const user = await User.findOne({ username }).select("-password")
@@ -13,7 +13,7 @@ export const getUserProfile = async (req, res) => {
         }
         res.status(200).json(user)
     } catch (error) {
-        res.status(200).json({ error: error.message })
+        res.status(500).json({ error: error.message })
     }
 }
 

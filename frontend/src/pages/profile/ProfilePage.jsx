@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import Posts from "../../components/common/Posts";
@@ -16,13 +16,13 @@ const ProfilePage = () => {
 	const [coverImg, setCoverImg] = useState(null);
 	const [profileImg, setProfileImg] = useState(null);
 	const [feedType, setFeedType] = useState("posts");
-
+	
 	const coverImgRef = useRef(null);
 	const profileImgRef = useRef(null);
-
+	
 	const isLoading = false;
 	const isMyProfile = true;
-
+	
 	const user = {
 		_id: "1",
 		fullName: "Monkey D. Luffy",
@@ -34,7 +34,7 @@ const ProfilePage = () => {
 		following: ["1", "2", "3"],
 		followers: ["1", "2", "3"],
 	};
-
+	
 	const handleImgChange = (e, state) => {
 		const file = e.target.files[0];
 		if (file) {

@@ -6,35 +6,43 @@ import { v2 as cloudinary } from "cloudinary"
 
 export const createPost = async (req, res) => {
     try {
-        const { text } = req.body;
-        const { img } = req.body;
+        const { text, img } = req.body;
         const userId = req.user._id.toString();
 
-        const user = await User.findById(userId)
-        if (!user) return res.status(400).json({ message: "user not found" })
+        const user = await User.findById(userId);
+        if (!user) return res.status(400).json({ message: "user not found" });
 
         if (!text && !img) {
-            return res.status(400).json({ message: "post must have a text or an image" })
+            return res.status(400).json({ message: "post must have a text or an image" });
         }
 
+        let imageUrl = null;
         if (img) {
-            const uploadResponse = await cloudinary.uploader.upload(img);
-            img = uploadResponse.secure_url;
+            try {
+                const uploadResponse = await cloudinary.uploader.upload(img, {
+                    folder: "posts"
+                });
+                // console.log("Cloudinary Upload Response:", uploadResponse); 
+                imageUrl = uploadResponse.secure_url;
+            } catch (uploadError) {
+                console.error("Error uploading image to Cloudinary:", uploadError);
+                return res.status(500).json({ message: "Error uploading image" });
+            }
         }
 
         const newPost = new Post({
             user: userId,
             text,
-            img
-        })
+            img: imageUrl
+        });
 
         await newPost.save();
-        res.status(201).json(newPost)
+        res.status(201).json(newPost);
     } catch (error) {
-        res.status(500).json({ error: error.message })
-
+        console.error("Error creating post:", error); // Log the error for debugging
+        res.status(500).json({ error: error.message });
     }
-}
+};
 
 export const deletePost = async (req, res) => {
     try {
@@ -49,12 +57,15 @@ export const deletePost = async (req, res) => {
 
         if (post.img) {
             const imgId = post.img.split("/").pop().split(".")[0]
-            await cloudinary.uploader.destroy(imgId)
+            await cloudinary.uploader.destroy(`posts/${imgId}`,{
+                invalidate: true,
+                resource_type: "image",
+            }).then(result => console.log(result))
         }
 
         await Post.findByIdAndDelete(req.params.id)
 
-        res.status(400).json({ message: "post deleted successfully" })
+        res.status(200).json({ message: "post deleted successfully" })
     } catch (error) {
         res.status(500).json({ error: error.message })
     }

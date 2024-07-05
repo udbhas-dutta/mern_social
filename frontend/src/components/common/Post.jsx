@@ -5,25 +5,57 @@ import { FaRegBookmark } from "react-icons/fa6";
 import { FaTrash } from "react-icons/fa";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+import { toast } from "react-toastify";
+import LoadingSpinner from "./LoadingSpinner";
 
 const Post = ({ post }) => {
 	const [comment, setComment] = useState("");
+	const { data: authUser } = useQuery({ queryKey: ["authUser"] })
+	const queryClient = useQueryClient()
+
+	const { mutate: deletePost, isPending } = useMutation({
+		mutationFn: async () => {
+			try {
+				const res = await axios.delete(`/api/posts/${post._id}`)
+				const data = res.data
+				if (res.status !== 200) {
+					throw new Error(data.error || "something went wrong")
+				}
+				return data
+			} catch (error) {
+				throw new Error(error)
+			}
+		},
+		onSuccess: () => {
+			toast.success("Post deleted successfully")
+			//invalidate query to refetch the data
+			queryClient.invalidateQueries({ queryKey: ["posts"] })
+		},
+		onError: (error) => {
+			toast.error(`Failed to delete post: ${error.message}`);
+		},
+	})
+
 	const postOwner = post.user;
 	const isLiked = false;
 
-	const isMyPost = true;
+	const isMyPost = authUser._id === post.user._id;
 
 	const formattedDate = "1h";
 
 	const isCommenting = false;
 
-	const handleDeletePost = () => {};
+	const handleDeletePost = () => {
+		deletePost()
+	};
 
 	const handlePostComment = (e) => {
 		e.preventDefault();
 	};
 
-	const handleLikePost = () => {};
+	const handleLikePost = () => { };
 
 	return (
 		<>
@@ -45,7 +77,11 @@ const Post = ({ post }) => {
 						</span>
 						{isMyPost && (
 							<span className='flex justify-end flex-1'>
-								<FaTrash className='cursor-pointer hover:text-red-500' onClick={handleDeletePost} />
+								{!isPending && <FaTrash className='cursor-pointer hover:text-red-500' onClick={handleDeletePost} />}
+
+								{isPending && (
+									<LoadingSpinner size="sm" />
+								)}
 							</span>
 						)}
 					</div>
@@ -70,7 +106,7 @@ const Post = ({ post }) => {
 									{post.comments.length}
 								</span>
 							</div>
-							{/* We're using Modal Component from DaisyUI */}
+							{/* Modal Component from DaisyUI */}
 							<dialog id={`comments_modal${post._id}`} className='modal border-none outline-none'>
 								<div className='modal-box rounded border border-gray-600'>
 									<h3 className='font-bold text-lg mb-4'>COMMENTS</h3>
@@ -135,9 +171,8 @@ const Post = ({ post }) => {
 								{isLiked && <FaRegHeart className='w-4 h-4 cursor-pointer text-pink-500 ' />}
 
 								<span
-									className={`text-sm text-slate-500 group-hover:text-pink-500 ${
-										isLiked ? "text-pink-500" : ""
-									}`}
+									className={`text-sm text-slate-500 group-hover:text-pink-500 ${isLiked ? "text-pink-500" : ""
+										}`}
 								>
 									{post.likes.length}
 								</span>

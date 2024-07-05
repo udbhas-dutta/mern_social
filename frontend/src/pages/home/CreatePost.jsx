@@ -2,6 +2,9 @@ import { CiImageOn } from "react-icons/ci";
 import { BsEmojiSmileFill } from "react-icons/bs";
 import { useRef, useState } from "react";
 import { IoCloseSharp } from "react-icons/io5";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 const CreatePost = () => {
 	const [text, setText] = useState("");
@@ -9,8 +12,43 @@ const CreatePost = () => {
 
 	const imgRef = useRef(null);
 
-	const isPending = false;
-	const isError = false;
+	const { data: authUser } = useQuery({ queryKey: ["authUser"] })
+	const queryClient = useQueryClient()
+
+	const { mutate: createPost, isPending } = useMutation({
+		mutationFn: async ({ text, img }) => {
+			try {
+				const res = await axios.post("/api/posts/create", {
+					text,
+					img
+				})
+
+				const data = res.data
+				if (data.error) {
+					throw new Error(data.error || "something went wrong")
+				}
+				return data
+
+			} catch (error) {
+				if (error.response && error.response.data && error.response.data.message) {
+					throw new Error(error.response.data.message)
+				} else {
+					throw new Error(error.message)
+				}
+			}
+		},
+
+		onSuccess: () => {
+			setText("")
+			setImg(null)
+			toast.success("Post created successfully")
+			queryClient.invalidateQueries({ queryKey: ['posts'] })
+
+		},
+		onError: () => {
+			toast.error(`Failed to create post: ${error.message}`);
+		}
+	})
 
 	const data = {
 		profileImg: "/avatars/boy1.png",
@@ -18,7 +56,7 @@ const CreatePost = () => {
 
 	const handleSubmit = (e) => {
 		e.preventDefault();
-		alert("Post created successfully");
+		createPost({ text, img })
 	};
 
 	const handleImgChange = (e) => {
@@ -36,7 +74,7 @@ const CreatePost = () => {
 		<div className='flex p-4 items-start gap-4 border-b border-gray-700'>
 			<div className='avatar'>
 				<div className='w-8 rounded-full'>
-					<img src={data.profileImg || "/avatar-placeholder.png"} />
+					<img src={authUser.profileImg || "/avatar-placeholder.png"} />
 				</div>
 			</div>
 			<form className='flex flex-col gap-2 w-full' onSubmit={handleSubmit}>
@@ -72,7 +110,6 @@ const CreatePost = () => {
 						{isPending ? "Posting..." : "Post"}
 					</button>
 				</div>
-				{isError && <div className='text-red-500'>Something went wrong</div>}
 			</form>
 		</div>
 	);

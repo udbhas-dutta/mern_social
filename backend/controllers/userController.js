@@ -115,7 +115,10 @@ export const updateProfile = async (req, res) => {
                 }
 
                 //update profile img
-                const uploadedResponse = await cloudinary.uploader.upload(profileImg)
+                const uploadedResponse = await cloudinary.uploader.upload(profileImg, {
+                    folder: "users",
+                })
+                // console.log("Cloudinary Upload Response:", uploadResponse); 
                 profileImg = uploadedResponse.secure_url;
             }
 
@@ -125,7 +128,11 @@ export const updateProfile = async (req, res) => {
                 }
 
                 //update cover img
-                const uploadedResponse = await cloudinary.uploader.upload(coverImg)
+                const uploadedResponse = await cloudinary.uploader.upload(coverImg, {
+                    folder: "coverImgs",
+                })
+                // console.log("Cloudinary Upload Response:", uploadResponse); 
+
                 profileImg = uploadedResponse.secure_url;
             }
 

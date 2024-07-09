@@ -8,17 +8,17 @@ const Posts = ({ feedType, username, userId }) => {
 	const getPostEndpoint = () => {
 		switch (feedType) {
 			case "forYou":
-				return "http://localhost:5000/api/posts/all";
+				return "/api/posts/all";
 			case "following":
-				return "http://localhost:5000/api/posts/following";
+				return "/api/posts/following";
 			case "posts":
 				console.log("Username:", username); // Debug log
-				return `http://localhost:5000/api/posts/user/${username}`;
+				return `/api/posts/user/${username}`;
 			case "liked":
 				console.log("UserId:", userId); // Debug log
-				return `http://localhost:5000/api/posts/likes/${userId}`;
+				return `/api/posts/likes/${userId}`;
 			default:
-				return "http://localhost:5000/api/posts/all";
+				return "/api/posts/all";
 		}
 	};
 
@@ -29,9 +29,7 @@ const Posts = ({ feedType, username, userId }) => {
 		queryKey: ["posts", feedType],
 		queryFn: async () => {
 			try {
-				const res = await axios.get(postEndpoint, {
-					withCredentials: true, // If your backend requires credentials
-				});
+				const res = await axios.get(postEndpoint);
 				if (res.status !== 200) {
 					throw new Error(res.data.error || "Something went wrong");
 				}

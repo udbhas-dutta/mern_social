@@ -12,6 +12,9 @@ export default defineConfig({
         changeOrigin: true,
         // rewrite: (path) => path.replace(/^\/api/, '') // Optional: rewrites the path if necessary
       }
+    },
+    alias:{
+      path: "path-browserify"
     }
   },
 })

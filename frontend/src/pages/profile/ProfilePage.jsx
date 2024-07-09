@@ -11,11 +11,12 @@ import { FaArrowLeft } from "react-icons/fa6";
 import { IoCalendarOutline } from "react-icons/io5";
 import { FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
-import { useQuery } from "@tanstack/react-query";
+import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { formatMemberSinceDate } from "../../utils/date/dateFn";
 import useFollow from "../../components/hooks/useFollow";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
+import { toast } from "react-toastify";
 
 const ProfilePage = () => {
     const [coverImg, setCoverImg] = useState(null);
@@ -27,12 +28,13 @@ const ProfilePage = () => {
     const profileImgRef = useRef(null);
 
     const { username } = useParams()
-    const {follow, isPending} = useFollow()
+    const { follow, isPending } = useFollow()
+    const queryClient = useQueryClient()
 
     const { data: authUser } = useQuery({ queryKey: ['authUser'] })
 
     const { data: user, isLoading, refetch, isRefetching } = useQuery({
-        queryKey: ['userprofile'],
+        queryKey: ['userProfile'],
         queryFn: async () => {
             try {
                 const res = await axios.get(`/api/users/profile/${username}`)
@@ -72,6 +74,34 @@ const ProfilePage = () => {
             reader.readAsDataURL(file);
         }
     };
+
+    const { mutateAsync: updateProfile, isPending: isUpdatingProfile } = useMutation({
+        mutationFn: async () => {
+            try {
+                const res = await axios.post("/api/users/update", {
+                    coverImg,
+                    profileImg
+                })
+                const data = res.data
+                if (res.status !== 200) {
+                    throw new Error(data.error || "something went wrong")
+                }
+                return data
+            } catch (error) {
+                throw new Error(error.message)
+            }
+        },
+        onSuccess: () => {
+            toast.success("Profile updated successfully")
+            Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['authUser'] }),
+                queryClient.invalidateQueries({ queryKey: ['userProfile'] }),
+            ])
+        },
+        onError: () => {
+            toast.error(error.message)
+        }
+    })
 
     return (
         <>
@@ -135,13 +165,13 @@ const ProfilePage = () => {
                                 </div>
                             </div>
                             <div className='flex justify-end px-4 mt-5'>
-                                {isMyProfile && <EditProfileModal />}
+                                {isMyProfile && <EditProfileModal authUser={authUser} />}
                                 {!isMyProfile && (
                                     <button
                                         className='btn btn-outline rounded-full btn-sm'
                                         onClick={() => follow(user?._id)}
                                     >
-                                        {isPending && <LoadingSpinner size="md"/>}
+                                        {isPending && <LoadingSpinner size="md" />}
                                         {!isPending && amIfollowing && "Unfollow"}
                                         {!isPending && !amIfollowing && "Follow"}
                                     </button>
@@ -149,9 +179,13 @@ const ProfilePage = () => {
                                 {(coverImg || profileImg) && (
                                     <button
                                         className='btn btn-primary rounded-full btn-sm text-white px-4 ml-2'
-                                        onClick={() => alert("Profile updated successfully")}
+                                        onClick={ async () =>{
+                                            await updateProfile()
+                                            setProfileImg(null)
+                                            setCoverImg(null)
+                                        }}
                                     >
-                                        Update
+                                        {isUpdatingProfile ? "Updating..." : "Update"}
                                     </button>
                                 )}
                             </div>
